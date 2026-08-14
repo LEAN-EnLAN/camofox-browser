@@ -32,6 +32,7 @@ import {
 } from './lib/metrics.js';
 import { actionFromReq, classifyError } from './lib/request-utils.js';
 import { cleanupOrphanedTempFiles, cleanupStaleFirefoxProfiles } from './lib/tmp-cleanup.js';
+import { x11PinnedEnv } from './lib/display-env.js';
 import { coalesceInflight } from './lib/inflight.js';
 import { createPageWithSessionRecovery } from './lib/new-page-recovery.js';
 import { resolveUploadPaths } from './lib/upload-paths.js';
@@ -1064,6 +1065,12 @@ async function launchBrowserInstance() {
         geoip: !!launchProxy,
         virtual_display: vdDisplay,
         exclude_addons: CONFIG.disableDefaultAddons ? ['UBO'] : undefined,
+        // Pin the browser to the Xvfb display. Without this, a session-wide
+        // WAYLAND_DISPLAY (Hyprland, GNOME, KDE on Wayland) makes Firefox pick
+        // its Wayland backend, ignore DISPLAY, and open a visible window on
+        // the user's desktop. Passing env also stops camoufox-js from
+        // mutating process.env (it sets DISPLAY on whatever object it gets).
+        env: useVirtualDisplay ? x11PinnedEnv() : undefined,
       });
       options.proxy = normalizePlaywrightProxy(options.proxy);
       // Playwright's launcher defaults handleSIGTERM/SIGINT/SIGHUP to true,
